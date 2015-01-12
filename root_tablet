@@ -1,0 +1,235 @@
+#!/bin/bash
+
+#######
+###
+### Made by Stephane HUC - <devs@stephane-huc.net>
+###
+#######
+### This tool is inspired (for JB) by VirusPlus Script (under Vondroid Forum)
+#### http://vondroid.com/resources/rk3188-simple-root.387/
+### and thanks for thoses explains :
+#### http://www.freaktab.com/showthread.php?12384-Rooting-KitKat
+###
+
+PWD=$(pwd)
+
+# Packages names
+BBOX="busybox"
+RECO="install-recovery.sh"
+SuperSU="Superuser.apk"
+SU="su"
+version="v2.02"
+
+# Directories where are packages needed into your computer
+DIR_BB="${PWD}/RK3188 SImple Root-Unroot Tool by VirusPlus/${BBOX}"
+DIR_RECO="${PWD}/UPDATE-SuperSU-${version}/common/${RECO}"
+DIR_SU="${PWD}/UPDATE-SuperSU-${version}/arm/${SU}"
+DIR_SSU="${PWD}/UPDATE-SuperSU-${version}/common/${SuperSU}"
+
+# Directories where are packages into tablet system
+SYS_BB="/system/xbin/${BBOX}"
+SYS_RECO="/system/etc/${RECO}"
+SYS_SU="/system/xbin/${SU}"
+SYS_SSU="/system/app/${SuperSU}"
+
+# where are adb binary
+adb=$(which adb)
+
+###
+# functions - DON'T TOUCH!
+###
+
+function adb_mount_system() {
+
+    case "$1" in
+        "r") echo "Mount system to read-only into your tablet!"; io="ro" ;;
+        "w") echo "Mount system to read'n write into your tablet!"; io="rw" ;;
+    esac
+
+    ${adb} shell "mount -o remount,${io} /system"
+    unset io
+
+}
+
+function menu() {
+
+    ACT[1]="root JB (4.2.x)"
+    ACT[2]="unroot JB"
+    ACT[3]="root KK (4.4.x)"
+    ACT[4]="unroot KK"
+    ACT[5]="reboot your tablet"
+    ACT[6]="Quit"
+
+    echo "RK3188 Root/Unroot Tool :: Welcome"
+
+    PS3="What do you want:"
+    select choice in "${ACT[@]}"
+    do
+        case $REPLY in
+            1) root ;;
+            2) unroot ;;
+            3) root_kk ;;
+            4) unroot_kk ;;
+            5) reboot ;;
+            6) exit 0 ;;
+        esac
+    done
+
+}
+
+function mount() {
+
+    echo "Mount your tablet to write in..."
+    ${adb} kill-server
+    ${adb} wait-for-device
+    ${adb} root
+    ${adb} remount
+    [[ $? -ne 0 ]] && adb_mount_system "w"
+    echo "Your tablet is ready to write in..."
+
+}
+
+function reboot() {
+
+    echo "Your tablet reboot..."
+    ${adb} reboot
+    ${adb} kill-server
+    echo "*** Enjoy-it! ***"
+
+}
+
+function root() {
+
+    clear
+    echo "The script will to root your tablet!"
+
+    mount
+
+    echo "Install binairy su to your tablet"
+    ${adb} push "${DIR_SU}" "${SYS_SU}"
+    ${adb} shell "if [[ -f ${SYS_SU} ]]; then chown root.root ${SYS_SU} && chmod 0755 ${SYS_SU}; fi"
+    ${adb} shell "if [[ -f ${SYS_SU} ]]; then echo Install su: OK!; else echo Install su: Error!; fi"
+    #${adb} shell chown root.root "${SYS_SU}"
+    #${adb} shell chmod 6755 "${SYS_SU}"
+
+    sleep 3
+
+    echo "Install binary busybox to your tablet"
+    ${adb} push "${DIR_BB}" "${SYS_BB}"
+    ${adb} shell "if [[ -f ${SYS_BB} ]]; then chown root.root ${SYS_BB} && chmod 0755 ${SYS_BB}; fi"
+    ${adb} shell "if [[ -f ${SYS_BB} ]]; then echo Install busybox: OK!; else echo Install busybox: Error!; fi"
+    #${adb} shell chown root.root "${SYS_BB}"
+    #${adb} shell chmod 6755 "${SYS_BB}"
+
+    sleep 3
+
+    echo "Install binary SuperSU to your tablet"
+    ${adb} push  "${DIR_SSU}" "${SYS_SSU}"
+    ${adb} shell "if [[ -f ${SYS_SSU} ]]; then chown root.root ${SYS_SSU} && chmod 0644 ${SYS_SSU}; fi"
+    ${adb} shell "if [[ -f ${SYS_SSU} ]]; then echo Install SuperSU: OK!; else echo Install SuperSU: Error!; fi"
+    #${adb} shell chown root.root "${SYS_SSU}"
+    #${adb} shell chmod 0644 "${SYS_SSU}"
+
+    sleep 3
+
+    echo "ROOT 1rst step ENDING... Please, verify no error message!"
+
+    sleep 3
+    adb_mount_system "r"
+
+}
+
+function root_kk() {
+
+    root
+
+    sleep 3
+
+    adb_mount_system "w"
+
+    sleep 3
+
+    echo "Copy su to daemonsu"
+    ${adb} shell cp "${SYS_SU}" /system/xbin/daemonsu
+    ${adb} shell "if [[ -f /system/xbin/daemonsu ]]; then chown root.root /system/xbin/daemonsu && chmod 0755 /system/xbin/daemonsu; fi"
+    ${adb} shell "if [[ -f /system/xbin/daemonsu ]]; then echo Install DaemonSU: OK!; else echo Install DaemonSU: Error!; fi"
+    #${adb} shell chown root.root /system/xbin/daemonsu
+    #${adb} shell chmod 0755 /system/xbin/daemonsu
+
+    sleep 3
+
+    echo "Install recovery.sh"
+    ${adb} push "${DIR_RECO}" "${SYS_RECO}"
+    ${adb} shell "if [[ -f ${SYS_RECO} ]]; then chown root.root ${SYS_RECO} && chmod 0755 ${SYS_RECO}; fi"
+    ${adb} shell "if [[ -f ${SYS_RECO} ]]; then echo Install Recovery.sh: OK!; else echo Install Recovery.sh: Error!; fi"
+    #${adb} shell chown 0.2000 /system/etc/install-recovery.sh
+    #${adb} shell chmod 0755 /system/etc/install-recovery.sh
+
+    sleep 3
+    echo "ROOT KitKat ENDING... Please, verify no error message!"
+
+    sleep 3
+    adb_mount_system "r"
+
+}
+
+function unroot() {
+
+    clear
+    echo "The script will to unroot your tablet!"
+
+    mount
+
+    echo "Remove ${SuperSU}"
+    ${adb} shell "if [[ -f ${SYS_SSU} ]]; then rm ${SYS_SSU}; fi"
+
+    ${adb} shell "cd /data/app/"
+    ${adb} shell 'find . -name "*eu.chainfire.supersu*" -delete'
+
+    ${adb} shell "cd /data/app-lib/"
+    ${adb} shell 'find . -name "*eu.chainfire.supersu*" -exec rm -rf {} \;'
+
+    ${adb} shell "cd /data/data/"
+    ${adb} shell 'find . -name "*eu.chainfire.supersu*" -exec rm -rf {} \;'
+
+    ${adb} shell "cd /data/dalvik-cache/"
+    ${adb} shell 'find . -name "*superuser*" -delete'
+    ${adb} shell 'find . -name "*eu.chainfire.supersu*" -delete'
+
+    echo "Remove ${SU} binary"
+    ${adb} shell "if [[ -f ${SYS_SU} ]]; then rm ${SYS_SU}; fi"
+
+    echo "Remove ${BBOX} binary"
+    ${adb} shell "if [[ -f ${SYS_BB} ]]; then rm ${SYS_BB}; fi"
+
+    echo "UNROOT 1rst step ENDING... Please, verify no error message!"
+
+    sleep 3
+
+    adb_mount_system "r"
+
+}
+
+function unroot_kk() {
+
+    unroot
+
+    sleep 3
+
+    adb_mount_system "w"
+
+    echo "Remove daemonsu binary"
+    ${adb} shell "if [[ -f /system/xbin/daemonsu ]]; then rm /system/xbin/daemonsu; fi"
+
+    echo "Remove ${RECO} file"
+    ${adb} shell "if [[ -f ${SYS_RECO} ]]; then rm ${SYS_RECO}; fi"
+
+    echo "UNROOT KitKat ENDING... Please, verify no error message!"
+
+    sleep 3
+
+    adb_mount_system "r"
+
+}
+
+menu
