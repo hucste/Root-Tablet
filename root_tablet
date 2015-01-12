@@ -10,30 +10,64 @@
 ### and thanks for thoses explains :
 #### http://www.freaktab.com/showthread.php?12384-Rooting-KitKat
 ###
+clear
+
+###############################################################################
+
+ABI=""
+ARCH="arm"
+
+#declare -a ARCHITECTURES=('arm','armeabi-v7a','arm64-v8a','mip','mips','mips64','x86','x86_64')
+
+declare -A ARCH_FOLDERS
+ARCH_FOLDERS["arm"]="arm";
+ARCH_FOLDERS["armeabi-v7a"]="armv7";
+ARCH_FOLDERS["arm64-v8a"]="arm64";
+ARCH_FOLDERS["mip"]="mips";
+ARCH_FOLDERS["mips"]="mips";
+ARCH_FOLDERS["mips64"]="mips64";
+ARCH_FOLDERS["x86"]="x86";
+ARCH_FOLDERS["x86_64"]="x64";
+
+#BBOX="busybox"
+
+declare -i CHMOD=06755
+
+declare -a MENU
+MENU[1]="root"
+MENU[2]="unroot"
+MENU[3]="reboot your tablet"
+MENU[4]="Quit"
+
+declare -A UNAME_FOLDERS
+UNAME_FOLDERS["armv6l"]="arm";
+UNAME_FOLDERS["armv7l"]="armv7";
+UNAME_FOLDERS["armv8l"]="arm64";
+UNAME_FOLDERS["aarch64"]="arm64";
+UNAME_FOLDERS["mips"]="mips";
+UNAME_FOLDERS["mips64"]="mips64";
+UNAME_FOLDERS["i386"]="x86";
+UNAME_FOLDERS["i686"]="x86";
+UNAME_FOLDERS["x86_64"]="x64";
+
+OS="Linux"
 
 PWD=$(pwd)
 
-# Packages names
-BBOX="busybox"
+declare -i SDK
+#declare -a SSU_FOLDERS=('arm','armv7','arm64','mips','mips','mips64','x86','x64')
+
 RECO="install-recovery.sh"
 SuperSU="Superuser.apk"
 SU="su"
-version="v2.02"
-
-# Directories where are packages needed into your computer
-DIR_BB="${PWD}/RK3188 SImple Root-Unroot Tool by VirusPlus/${BBOX}"
-DIR_RECO="${PWD}/UPDATE-SuperSU-${version}/common/${RECO}"
-DIR_SU="${PWD}/UPDATE-SuperSU-${version}/arm/${SU}"
-DIR_SSU="${PWD}/UPDATE-SuperSU-${version}/common/${SuperSU}"
 
 # Directories where are packages into tablet system
-SYS_BB="/system/xbin/${BBOX}"
+#SYS_BB="/system/xbin/${BBOX}"
 SYS_RECO="/system/etc/${RECO}"
 SYS_SU="/system/xbin/${SU}"
 SYS_SSU="/system/app/${SuperSU}"
 
-# where are adb binary
-adb=$(which adb)
+version=""
 
 ###
 # functions - DON'T TOUCH!
@@ -51,27 +85,88 @@ function adb_mount_system() {
 
 }
 
+function detect_abi() {
+
+    echo "### Detect Tablet Architecture:"
+    ABI=$(adb shell cat /system/build.prop /default.prop | grep -m 1 "ro.product.cpu.abi=" | dd bs=1 skip=19 count=3)
+    #ABI=$(adb shell uname -m)
+    sleep 1
+    ARCH="${ARCH_FOLDERS[${ABI}]}"
+
+}
+
+function detect_adb() {
+
+    adb=$(which adb)
+    if [[ -z "${adb}" ]]; then
+        echo "ADB is not install!"
+        exit 1
+    fi
+    unset adb
+
+}
+
+function detect_os() {
+
+    MACHINE=$(uname -m)
+    OS=$(uname -s)
+
+}
+
+function detect_sdk() {
+
+    echo "### Detect SDK Version:"
+    SDK=$(adb shell cat /system/build.prop | grep "ro.build.version.sdk=" | dd bs=1 skip=21 count=2)
+    sleep 1
+
+    if [[ ${SDK} -gt 17 ]]; then
+        CHMOD=0755
+    fi
+
+}
+
+function detect_ssu() {
+
+    echo "### Detect if you have SuperSU:"
+    #ls -al | grep "UPDATE-SuperSU"
+    find "${PWD}" -name "UPDATE-SuperSU*" -type d
+
+    read -p "Have you seen a folder with name begin by 'UPDATE-SuperSU-v? (y|n) "
+    case $REPLY in
+        o|O|y|Y)
+            read -p "Please, write number version as '2.40' for UPDATE-SuperSU-v2.40: " version
+        ;;
+        n|N)
+            echo "Please, download and uncompress SuperSU! Bye ..."; exit
+        ;;
+        *)
+            echo "Entry not valid! Retry..."
+            detect_ssu
+        ;;
+    esac
+
+    if [[ -d "${PWD}/UPDATE-SuperSU-v${version}" ]]; then
+        # Directories where are packages needed into your computer
+        #DIR_BB="${PWD}/RK3188 SImple Root-Unroot Tool by VirusPlus/${BBOX}"
+        DIR_RECO="${PWD}/UPDATE-SuperSU-${version}/common/${RECO}"
+        DIR_SU="${PWD}/UPDATE-SuperSU-${version}/${ARCH}/${SU}"
+        DIR_SSU="${PWD}/UPDATE-SuperSU-${version}/common/${SuperSU}"
+    else
+        echo "Folder 'UPDATE-SuperSU-v${version}' not exists! Bye ..."; exit
+    fi
+
+}
+
 function menu() {
 
-    ACT[1]="root JB (4.2.x)"
-    ACT[2]="unroot JB"
-    ACT[3]="root KK (4.4.x)"
-    ACT[4]="unroot KK"
-    ACT[5]="reboot your tablet"
-    ACT[6]="Quit"
-
-    echo "RK3188 Root/Unroot Tool :: Welcome"
-
     PS3="What do you want:"
-    select choice in "${ACT[@]}"
+    select choice in "${MENU[@]}"
     do
         case $REPLY in
             1) root ;;
             2) unroot ;;
-            3) root_kk ;;
-            4) unroot_kk ;;
-            5) reboot ;;
-            6) exit 0 ;;
+            3) reboot ;;
+            4) echo "GoodBye!"; exit 0 ;;
         esac
     done
 
@@ -107,21 +202,21 @@ function root() {
 
     echo "Install binairy su to your tablet"
     ${adb} push "${DIR_SU}" "${SYS_SU}"
-    ${adb} shell "if [[ -f ${SYS_SU} ]]; then chown root.root ${SYS_SU} && chmod 0755 ${SYS_SU}; fi"
+    ${adb} shell "if [[ -f ${SYS_SU} ]]; then chown root.root ${SYS_SU} && chmod ${CHMOD} ${SYS_SU}; fi"
     ${adb} shell "if [[ -f ${SYS_SU} ]]; then echo Install su: OK!; else echo Install su: Error!; fi"
     #${adb} shell chown root.root "${SYS_SU}"
     #${adb} shell chmod 6755 "${SYS_SU}"
 
     sleep 3
 
-    echo "Install binary busybox to your tablet"
-    ${adb} push "${DIR_BB}" "${SYS_BB}"
-    ${adb} shell "if [[ -f ${SYS_BB} ]]; then chown root.root ${SYS_BB} && chmod 0755 ${SYS_BB}; fi"
-    ${adb} shell "if [[ -f ${SYS_BB} ]]; then echo Install busybox: OK!; else echo Install busybox: Error!; fi"
+    #echo "Install binary busybox to your tablet"
+    #${adb} push "${DIR_BB}" "${SYS_BB}"
+    #${adb} shell "if [[ -f ${SYS_BB} ]]; then chown root.root ${SYS_BB} && chmod ${CHMOD} ${SYS_BB}; fi"
+    #${adb} shell "if [[ -f ${SYS_BB} ]]; then echo Install busybox: OK!; else echo Install busybox: Error!; fi"
     #${adb} shell chown root.root "${SYS_BB}"
     #${adb} shell chmod 6755 "${SYS_BB}"
 
-    sleep 3
+    #sleep 3
 
     echo "Install binary SuperSU to your tablet"
     ${adb} push  "${DIR_SSU}" "${SYS_SSU}"
@@ -135,23 +230,26 @@ function root() {
     echo "ROOT 1rst step ENDING... Please, verify no error message!"
 
     sleep 3
+
+    if [[ ${SDK} -ge 19 ]]; then root_kk; fi
+
     adb_mount_system "r"
 
 }
 
 function root_kk() {
 
-    root
+    #root
 
-    sleep 3
+    #sleep 3
 
-    adb_mount_system "w"
+    #adb_mount_system "w"
 
-    sleep 3
+    #sleep 3
 
     echo "Copy su to daemonsu"
     ${adb} shell cp "${SYS_SU}" /system/xbin/daemonsu
-    ${adb} shell "if [[ -f /system/xbin/daemonsu ]]; then chown root.root /system/xbin/daemonsu && chmod 0755 /system/xbin/daemonsu; fi"
+    ${adb} shell "if [[ -f /system/xbin/daemonsu ]]; then chown root.root /system/xbin/daemonsu && chmod ${CHMOD} /system/xbin/daemonsu; fi"
     ${adb} shell "if [[ -f /system/xbin/daemonsu ]]; then echo Install DaemonSU: OK!; else echo Install DaemonSU: Error!; fi"
     #${adb} shell chown root.root /system/xbin/daemonsu
     #${adb} shell chmod 0755 /system/xbin/daemonsu
@@ -160,7 +258,7 @@ function root_kk() {
 
     echo "Install recovery.sh"
     ${adb} push "${DIR_RECO}" "${SYS_RECO}"
-    ${adb} shell "if [[ -f ${SYS_RECO} ]]; then chown root.root ${SYS_RECO} && chmod 0755 ${SYS_RECO}; fi"
+    ${adb} shell "if [[ -f ${SYS_RECO} ]]; then chown root.root ${SYS_RECO} && chmod ${CHMOD} ${SYS_RECO}; fi"
     ${adb} shell "if [[ -f ${SYS_RECO} ]]; then echo Install Recovery.sh: OK!; else echo Install Recovery.sh: Error!; fi"
     #${adb} shell chown 0.2000 /system/etc/install-recovery.sh
     #${adb} shell chmod 0755 /system/etc/install-recovery.sh
@@ -169,16 +267,17 @@ function root_kk() {
     echo "ROOT KitKat ENDING... Please, verify no error message!"
 
     sleep 3
-    adb_mount_system "r"
+
+    #adb_mount_system "r"
 
 }
 
 function unroot() {
 
-    clear
-    echo "The script will to unroot your tablet!"
+    #clear
+    #echo "The script will to unroot your tablet!"
 
-    mount
+    #mount
 
     echo "Remove ${SuperSU}"
     ${adb} shell "if [[ -f ${SYS_SSU} ]]; then rm ${SYS_SSU}; fi"
@@ -206,17 +305,19 @@ function unroot() {
 
     sleep 3
 
+    if [[ ${SDK} -ge 19 ]]; then unroot_kk; fi
+
     adb_mount_system "r"
 
 }
 
 function unroot_kk() {
 
-    unroot
+    #unroot
 
-    sleep 3
+    #sleep 3
 
-    adb_mount_system "w"
+    #adb_mount_system "w"
 
     echo "Remove daemonsu binary"
     ${adb} shell "if [[ -f /system/xbin/daemonsu ]]; then rm /system/xbin/daemonsu; fi"
@@ -228,8 +329,13 @@ function unroot_kk() {
 
     sleep 3
 
-    adb_mount_system "r"
+    #adb_mount_system "r"
 
 }
 
+echo "RK3188 Root/Unroot Tool :: Welcome"
+detect_adb
+detect_abi
+detect_sdk
+detect_ssu
 menu
