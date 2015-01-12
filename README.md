@@ -7,12 +7,9 @@ Author
 ------
 
 **HUC Stéphane** : <devs@stephane-huc.net><br />
-*alias* : *[ATP:RedRice][1]*, *[ATP:MIUI][2]*, *[ATP][3]*
-[1]: http://en.miui.com/index.php?192725708
-[2]: http://forum.frandroid.com/user/1514-atpmiui/
-[3]: http://www.freaktab.com/member.php?42437-ATP
+*alias* : *[ATP]*
 <br />
-*GIT* : <https://github.com/hucste/MTKZenyT><br />
+*GIT* : <https://github.com/hucste/Root-Tablet/><br />
 *Licence* : CC0 <http://directory.fsf.org/wiki/License:CC0>
 
 ----
