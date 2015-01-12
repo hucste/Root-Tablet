@@ -80,7 +80,7 @@ function adb_mount_system() {
         "w") echo "Mount system to read'n write into your tablet!"; io="rw" ;;
     esac
 
-    ${adb} shell "mount -o remount,${io} /system"
+    adb shell "mount -o remount,${io} /system"
     unset io
 
 }
@@ -98,7 +98,7 @@ function detect_abi() {
 function detect_adb() {
 
     adb=$(which adb)
-    if [[ -z "${adb}" ]]; then
+    if [[ -z "adb" ]]; then
         echo "ADB is not install!"
         exit 1
     fi
@@ -175,10 +175,10 @@ function menu() {
 function mount() {
 
     echo "Mount your tablet to write in..."
-    ${adb} kill-server
-    ${adb} wait-for-device
-    ${adb} root
-    ${adb} remount
+    adb kill-server
+    adb wait-for-device
+    adb root
+    adb remount
     [[ $? -ne 0 ]] && adb_mount_system "w"
     echo "Your tablet is ready to write in..."
 
@@ -187,8 +187,8 @@ function mount() {
 function reboot() {
 
     echo "Your tablet reboot..."
-    ${adb} reboot
-    ${adb} kill-server
+    adb reboot
+    adb kill-server
     echo "*** Enjoy-it! ***"
 
 }
@@ -201,29 +201,29 @@ function root() {
     mount
 
     echo "Install binairy su to your tablet"
-    ${adb} push "${DIR_SU}" "${SYS_SU}"
-    ${adb} shell "if [[ -f ${SYS_SU} ]]; then chown root.root ${SYS_SU} && chmod ${CHMOD} ${SYS_SU}; fi"
-    ${adb} shell "if [[ -f ${SYS_SU} ]]; then echo Install su: OK!; else echo Install su: Error!; fi"
-    #${adb} shell chown root.root "${SYS_SU}"
-    #${adb} shell chmod 6755 "${SYS_SU}"
+    adb push "${DIR_SU}" "${SYS_SU}"
+    adb shell "if [[ -f ${SYS_SU} ]]; then chown root.root ${SYS_SU} && chmod ${CHMOD} ${SYS_SU}; fi"
+    adb shell "if [[ -f ${SYS_SU} ]]; then echo Install su: OK!; else echo Install su: Error!; fi"
+    #adb shell chown root.root "${SYS_SU}"
+    #adb shell chmod 6755 "${SYS_SU}"
 
     sleep 3
 
     #echo "Install binary busybox to your tablet"
-    #${adb} push "${DIR_BB}" "${SYS_BB}"
-    #${adb} shell "if [[ -f ${SYS_BB} ]]; then chown root.root ${SYS_BB} && chmod ${CHMOD} ${SYS_BB}; fi"
-    #${adb} shell "if [[ -f ${SYS_BB} ]]; then echo Install busybox: OK!; else echo Install busybox: Error!; fi"
-    #${adb} shell chown root.root "${SYS_BB}"
-    #${adb} shell chmod 6755 "${SYS_BB}"
+    #adb push "${DIR_BB}" "${SYS_BB}"
+    #adb shell "if [[ -f ${SYS_BB} ]]; then chown root.root ${SYS_BB} && chmod ${CHMOD} ${SYS_BB}; fi"
+    #adb shell "if [[ -f ${SYS_BB} ]]; then echo Install busybox: OK!; else echo Install busybox: Error!; fi"
+    #adb shell chown root.root "${SYS_BB}"
+    #adb shell chmod 6755 "${SYS_BB}"
 
     #sleep 3
 
     echo "Install binary SuperSU to your tablet"
-    ${adb} push  "${DIR_SSU}" "${SYS_SSU}"
-    ${adb} shell "if [[ -f ${SYS_SSU} ]]; then chown root.root ${SYS_SSU} && chmod 0644 ${SYS_SSU}; fi"
-    ${adb} shell "if [[ -f ${SYS_SSU} ]]; then echo Install SuperSU: OK!; else echo Install SuperSU: Error!; fi"
-    #${adb} shell chown root.root "${SYS_SSU}"
-    #${adb} shell chmod 0644 "${SYS_SSU}"
+    adb push  "${DIR_SSU}" "${SYS_SSU}"
+    adb shell "if [[ -f ${SYS_SSU} ]]; then chown root.root ${SYS_SSU} && chmod 0644 ${SYS_SSU}; fi"
+    adb shell "if [[ -f ${SYS_SSU} ]]; then echo Install SuperSU: OK!; else echo Install SuperSU: Error!; fi"
+    #adb shell chown root.root "${SYS_SSU}"
+    #adb shell chmod 0644 "${SYS_SSU}"
 
     sleep 3
 
@@ -248,20 +248,20 @@ function root_kk() {
     #sleep 3
 
     echo "Copy su to daemonsu"
-    ${adb} shell cp "${SYS_SU}" /system/xbin/daemonsu
-    ${adb} shell "if [[ -f /system/xbin/daemonsu ]]; then chown root.root /system/xbin/daemonsu && chmod ${CHMOD} /system/xbin/daemonsu; fi"
-    ${adb} shell "if [[ -f /system/xbin/daemonsu ]]; then echo Install DaemonSU: OK!; else echo Install DaemonSU: Error!; fi"
-    #${adb} shell chown root.root /system/xbin/daemonsu
-    #${adb} shell chmod 0755 /system/xbin/daemonsu
+    adb shell cp "${SYS_SU}" /system/xbin/daemonsu
+    adb shell "if [[ -f /system/xbin/daemonsu ]]; then chown root.root /system/xbin/daemonsu && chmod ${CHMOD} /system/xbin/daemonsu; fi"
+    adb shell "if [[ -f /system/xbin/daemonsu ]]; then echo Install DaemonSU: OK!; else echo Install DaemonSU: Error!; fi"
+    #adb shell chown root.root /system/xbin/daemonsu
+    #adb shell chmod 0755 /system/xbin/daemonsu
 
     sleep 3
 
     echo "Install recovery.sh"
-    ${adb} push "${DIR_RECO}" "${SYS_RECO}"
-    ${adb} shell "if [[ -f ${SYS_RECO} ]]; then chown root.root ${SYS_RECO} && chmod ${CHMOD} ${SYS_RECO}; fi"
-    ${adb} shell "if [[ -f ${SYS_RECO} ]]; then echo Install Recovery.sh: OK!; else echo Install Recovery.sh: Error!; fi"
-    #${adb} shell chown 0.2000 /system/etc/install-recovery.sh
-    #${adb} shell chmod 0755 /system/etc/install-recovery.sh
+    adb push "${DIR_RECO}" "${SYS_RECO}"
+    adb shell "if [[ -f ${SYS_RECO} ]]; then chown root.root ${SYS_RECO} && chmod ${CHMOD} ${SYS_RECO}; fi"
+    adb shell "if [[ -f ${SYS_RECO} ]]; then echo Install Recovery.sh: OK!; else echo Install Recovery.sh: Error!; fi"
+    #adb shell chown 0.2000 /system/etc/install-recovery.sh
+    #adb shell chmod 0755 /system/etc/install-recovery.sh
 
     sleep 3
     echo "ROOT KitKat ENDING... Please, verify no error message!"
@@ -280,26 +280,26 @@ function unroot() {
     #mount
 
     echo "Remove ${SuperSU}"
-    ${adb} shell "if [[ -f ${SYS_SSU} ]]; then rm ${SYS_SSU}; fi"
+    adb shell "if [[ -f ${SYS_SSU} ]]; then rm ${SYS_SSU}; fi"
 
-    ${adb} shell "cd /data/app/"
-    ${adb} shell 'find . -name "*eu.chainfire.supersu*" -delete'
+    adb shell "cd /data/app/"
+    adb shell 'find . -name "*eu.chainfire.supersu*" -delete'
 
-    ${adb} shell "cd /data/app-lib/"
-    ${adb} shell 'find . -name "*eu.chainfire.supersu*" -exec rm -rf {} \;'
+    adb shell "cd /data/app-lib/"
+    adb shell 'find . -name "*eu.chainfire.supersu*" -exec rm -rf {} \;'
 
-    ${adb} shell "cd /data/data/"
-    ${adb} shell 'find . -name "*eu.chainfire.supersu*" -exec rm -rf {} \;'
+    adb shell "cd /data/data/"
+    adb shell 'find . -name "*eu.chainfire.supersu*" -exec rm -rf {} \;'
 
-    ${adb} shell "cd /data/dalvik-cache/"
-    ${adb} shell 'find . -name "*superuser*" -delete'
-    ${adb} shell 'find . -name "*eu.chainfire.supersu*" -delete'
+    adb shell "cd /data/dalvik-cache/"
+    adb shell 'find . -name "*superuser*" -delete'
+    adb shell 'find . -name "*eu.chainfire.supersu*" -delete'
 
     echo "Remove ${SU} binary"
-    ${adb} shell "if [[ -f ${SYS_SU} ]]; then rm ${SYS_SU}; fi"
+    adb shell "if [[ -f ${SYS_SU} ]]; then rm ${SYS_SU}; fi"
 
     echo "Remove ${BBOX} binary"
-    ${adb} shell "if [[ -f ${SYS_BB} ]]; then rm ${SYS_BB}; fi"
+    adb shell "if [[ -f ${SYS_BB} ]]; then rm ${SYS_BB}; fi"
 
     echo "UNROOT 1rst step ENDING... Please, verify no error message!"
 
@@ -320,10 +320,10 @@ function unroot_kk() {
     #adb_mount_system "w"
 
     echo "Remove daemonsu binary"
-    ${adb} shell "if [[ -f /system/xbin/daemonsu ]]; then rm /system/xbin/daemonsu; fi"
+    adb shell "if [[ -f /system/xbin/daemonsu ]]; then rm /system/xbin/daemonsu; fi"
 
     echo "Remove ${RECO} file"
-    ${adb} shell "if [[ -f ${SYS_RECO} ]]; then rm ${SYS_RECO}; fi"
+    adb shell "if [[ -f ${SYS_RECO} ]]; then rm ${SYS_RECO}; fi"
 
     echo "UNROOT KitKat ENDING... Please, verify no error message!"
 
